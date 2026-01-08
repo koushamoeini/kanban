@@ -29,6 +29,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ theme, toggleTheme }) 
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
+  const [filterPriority, setFilterPriority] = useState<number | 'all'>('all');
   const [sortBy, setSortBy] = useState<'priority' | 'dueDate' | 'none'>('none');
   const [allLabels, setAllLabels] = useState<Label[]>([]);
   const [visibleColumns, setVisibleColumns] = useState<TaskStatus[]>(ALL_STATUSES);
@@ -72,6 +73,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ theme, toggleTheme }) 
       );
     }
 
+    if (filterPriority !== 'all') {
+      result = result.filter(task => task.priority === filterPriority);
+    }
+
     if (sortBy === 'priority') {
       result.sort((a, b) => b.priority - a.priority);
     } else if (sortBy === 'dueDate') {
@@ -90,7 +95,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ theme, toggleTheme }) 
     }
 
     setFilteredTasks(result);
-  }, [tasks, searchQuery, selectedLabels, sortBy]);
+  }, [tasks, searchQuery, selectedLabels, sortBy, filterPriority]);
 
   const handleAddTask = (
     title: string, 
@@ -218,6 +223,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ theme, toggleTheme }) 
     <div className="kanban-board">
       <Toolbar
         searchQuery={searchQuery}
+        filterPriority={filterPriority}
+        onPriorityFilterChange={setFilterPriority}
         onSearchChange={setSearchQuery}
         allLabels={allLabels}
         selectedLabels={selectedLabels}

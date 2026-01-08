@@ -8,6 +8,8 @@ interface ToolbarProps {
   allLabels: Label[];
   selectedLabels: string[];
   onLabelsChange: (labels: string[]) => void;
+  filterPriority: number | 'all';
+  onPriorityFilterChange: (p: number | 'all') => void;
   sortBy: 'priority' | 'dueDate' | 'none';
   onSortChange: (sort: 'priority' | 'dueDate' | 'none') => void;
   availableColumns: TaskStatus[];
@@ -36,6 +38,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   allLabels,
   selectedLabels,
   onLabelsChange,
+  filterPriority,
+  onPriorityFilterChange,
   sortBy,
   onSortChange,
   availableColumns,
@@ -84,7 +88,20 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       <div className="toolbar-right-section">
         <button className="btn-theme-toggle" onClick={toggleTheme} title="تغییر ظاهر">
           {theme === 'light' ? '🌙' : '☀️'}
-        </button>
+        </button>filter-priority-group">
+          <select
+            className="sort-select"
+            value={filterPriority}
+            onChange={(e) => onPriorityFilterChange(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+          >
+            <option value="all">همه اولویت‌ها</option>
+            <option value={1}>کم (Low)</option>
+            <option value={2}>متوسط (Med)</option>
+            <option value={3}>زیاد (High)</option>
+          </select>
+        </div>
+
+        <div className="
         
         <div className="sort-group">
           <select
