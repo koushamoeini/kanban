@@ -88,7 +88,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       <div className="toolbar-right-section">
         <button className="btn-theme-toggle" onClick={toggleTheme} title="تغییر ظاهر">
           {theme === 'light' ? '🌙' : '☀️'}
-        </button>filter-priority-group">
+        </button>
+        
+        <div className="filter-priority-group">
           <select
             className="sort-select"
             value={filterPriority}
@@ -101,8 +103,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           </select>
         </div>
 
-        <div className="
-        
         <div className="sort-group">
           <select
             className="sort-select"
