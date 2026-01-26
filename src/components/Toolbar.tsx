@@ -12,25 +12,11 @@ interface ToolbarProps {
   onPriorityFilterChange: (p: number | 'all') => void;
   sortBy: 'priority' | 'dueDate' | 'none';
   onSortChange: (sort: 'priority' | 'dueDate' | 'none') => void;
-  availableColumns: TaskStatus[];
-  onAddColumn: (status: TaskStatus) => void;
+  onAddColumn: () => void;
   onAddLabel: (name: string, color?: string) => void;
   theme: 'light' | 'dark';
   toggleTheme: () => void;
 }
-
-const columnLabel = (status: TaskStatus): string => {
-  switch (status) {
-    case TaskStatus.TODO:
-      return 'در دست اقدام';
-    case TaskStatus.IN_PROGRESS:
-      return 'در دست انجام';
-    case TaskStatus.DONE:
-      return 'انجام شده';
-    default:
-      return status;
-  }
-};
 
 export const Toolbar: React.FC<ToolbarProps> = ({
   searchQuery,
@@ -42,37 +28,19 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onPriorityFilterChange,
   sortBy,
   onSortChange,
-  availableColumns,
   onAddColumn,
   onAddLabel,
   theme,
   toggleTheme
 }) => {
-  const [columnChoice, setColumnChoice] = useState<TaskStatus | ''>('');
   const [newLabelName, setNewLabelName] = useState('');
   const [showLabelInput, setShowLabelInput] = useState(false);
-
-  useEffect(() => {
-    if (availableColumns.length === 0) {
-      setColumnChoice('');
-      return;
-    }
-
-    if (!availableColumns.includes(columnChoice as TaskStatus)) {
-      setColumnChoice(availableColumns[0]);
-    }
-  }, [availableColumns, columnChoice]);
 
   const handleLabelToggle = (labelId: string): void => {
     const next = selectedLabels.includes(labelId)
       ? selectedLabels.filter(id => id !== labelId)
       : [...selectedLabels, labelId];
     onLabelsChange(next);
-  };
-
-  const handleAddColumn = (): void => {
-    if (!columnChoice) return;
-    onAddColumn(columnChoice);
   };
 
   const handleAddLabel = (): void => {
@@ -131,29 +99,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
       <div className="toolbar-left-section">
         <div className="column-management">
-          <select
-            value={columnChoice}
-            onChange={(e) => setColumnChoice(e.target.value as TaskStatus)}
-            className="sort-select"
-            disabled={availableColumns.length === 0}
-          >
-            {availableColumns.length === 0 ? (
-              <option value="">همه ستون‌ها فعال هستند</option>
-            ) : (
-              availableColumns.map(status => (
-                <option key={status} value={status}>
-                  {columnLabel(status)}
-                </option>
-              ))
-            )}
-          </select>
           <button
             type="button"
             className="btn-add-column"
-            onClick={handleAddColumn}
-            disabled={!columnChoice}
+            onClick={onAddColumn}
           >
-            + ستون
+            + ستون جدید
           </button>
         </div>
       </div>
