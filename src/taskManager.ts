@@ -2,16 +2,41 @@ import { Task, TaskStatus, Priority, Label } from './types';
 
 const STORAGE_KEY = 'kanban_tasks';
 const LABELS_KEY = 'kanban_labels';
+const COLUMNS_KEY = 'kanban_columns';
+
+interface ColumnInfo {
+  id: string;
+  title: string;
+}
 
 class TaskManager {
   private tasks: Task[] = [];
   private labels: Label[] = [];
+  private columns: ColumnInfo[] = [];
 
   constructor() {
     this.loadFromStorage();
   }
 
   private loadFromStorage(): void {
+    const storedColumns = localStorage.getItem(COLUMNS_KEY);
+    if (storedColumns) {
+      try {
+        this.columns = JSON.parse(storedColumns);
+      } catch (e) {
+        console.error('Failed to load columns', e);
+      }
+    }
+    
+    // Initial columns if empty
+    if (this.columns.length === 0) {
+      this.columns = [
+        { id: 'TO_DO', title: 'در دست اقدام' },
+        { id: 'IN_PROGRESS', title: 'در دست انجام' },
+        { id: 'DONE', title: 'انجام شده' }
+      ];
+    }
+
     const storedTasks = localStorage.getItem(STORAGE_KEY);
     if (storedTasks) {
       try {
@@ -44,12 +69,53 @@ class TaskManager {
   private saveToStorage(): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(this.tasks));
     localStorage.setItem(LABELS_KEY, JSON.stringify(this.labels));
+    localStorage.setItem(COLUMNS_KEY, JSON.stringify(this.columns));
+  }
+
+  getColumns(): ColumnInfo[] {
+    return this.columns;
+  }
+
+  addColumn(title: string): ColumnInfo {
+    const id = `col_${Date.now()}`;
+    const newCol = { id, title };
+    this.columns.push(newCol);
+    this.saveToStorage();
+    return newCol;
+  }
+
+  updateColumnTitle(id: string, title: string): void {
+    const col = this.columns.find(c => c.id === id);
+    if (col) {
+      col.title = title;
+      this.saveToStorage();
+    }
+  }
+
+  deleteColumn(columnId: string, targetColumnId?: string): void {
+    // Remove the column definition
+    this.columns = this.columns.filter(c => c.id !== columnId);
+
+    if (targetColumnId) {
+      // Move tasks to target column
+      this.tasks.forEach(task => {
+        if (task.status === columnId) {
+          task.status = targetColumnId;
+          task.updatedAt = new Date();
+        }
+      });
+    } else {
+      // Delete tasks associated with this column
+      this.tasks = this.tasks.filter(task => task.status !== columnId);
+    }
+
+    this.saveToStorage();
   }
 
   createTask(
     title: string,
     description: string = '',
-    status: TaskStatus = TaskStatus.TODO,
+    status: TaskStatus = 'TO_DO',
     priority: Priority = Priority.MEDIUM,
     labels: Label[] = [],
     dueDate?: Date

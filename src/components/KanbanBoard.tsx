@@ -7,18 +7,6 @@ import { Modal } from './Modal';
 import { TaskEditModal } from './TaskEditModal';
 import './KanbanBoard.css';
 
-const COLUMN_TITLES: Record<TaskStatus, string> = {
-  [TaskStatus.TODO]: 'در دست اقدام',
-  [TaskStatus.IN_PROGRESS]: 'در دست انجام',
-  [TaskStatus.DONE]: 'انجام شده'
-};
-
-const ALL_STATUSES: TaskStatus[] = [
-  TaskStatus.TODO,
-  TaskStatus.IN_PROGRESS,
-  TaskStatus.DONE
-];
-
 interface KanbanBoardProps {
   theme: 'light' | 'dark';
   toggleTheme: () => void;
@@ -32,21 +20,30 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ theme, toggleTheme }) 
   const [filterPriority, setFilterPriority] = useState<number | 'all'>('all');
   const [sortBy, setSortBy] = useState<'priority' | 'dueDate' | 'none'>('none');
   const [allLabels, setAllLabels] = useState<Label[]>([]);
-  const [visibleColumns, setVisibleColumns] = useState<TaskStatus[]>(ALL_STATUSES);
+  const [columns, setColumns] = useState<{id: string, title: string}[]>([]);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
 
   // Modal States
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [editingColumn, setEditingColumn] = useState<{status: TaskStatus, title: string} | null>(null);
-  const [customColumnTitles, setCustomColumnTitles] = useState<Record<TaskStatus, string>>(COLUMN_TITLES);
+  const [editingColumn, setEditingColumn] = useState<{id: string, title: string} | null>(null);
+  const [columnToDelete, setColumnToDelete] = useState<string | null>(null);
+  const [deleteTaskDestination, setDeleteTaskDestination] = useState<string | 'delete'>('delete');
+  const [isAddingNewCol, setIsAddingNewCol] = useState(false);
+  const [newColTitle, setNewColTitle] = useState('');
 
   const loadTasks = (): void => {
     const allTasks = taskManager.getAllTasks();
+    const currentCols = taskManager.getColumns();
+    setColumns(currentCols);
+    
+    // Sort tasks based on current order and column sequence
     const sorted = [...allTasks].sort((a, b) => {
       if (a.status === b.status) {
         return a.order - b.order;
       }
-      return ALL_STATUSES.indexOf(a.status) - ALL_STATUSES.indexOf(b.status);
+      const indexA = currentCols.findIndex(c => c.id === a.status);
+      const indexB = currentCols.findIndex(c => c.id === b.status);
+      return indexA - indexB;
     });
     setTasks(sorted);
     setAllLabels(taskManager.getLabels());
@@ -127,9 +124,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ theme, toggleTheme }) 
     }
   };
 
-  const handleUpdateColumnTitle = (status: TaskStatus, newTitle: string): void => {
-    setCustomColumnTitles(prev => ({...prev, [status]: newTitle}));
+  const handleUpdateColumnTitle = (id: string, newTitle: string): void => {
+    taskManager.updateColumnTitle(id, newTitle);
     setEditingColumn(null);
+    loadTasks();
   };
 
   const handleTaskDragStart = (taskId: string): void => {
@@ -155,7 +153,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ theme, toggleTheme }) 
       return;
     }
 
-    const targetColumnTasks = taskManager.getTasksByStatus(targetStatus);
+    const targetColumnTasks = tasks.filter(t => t.status === targetStatus);
     const orderedIds = targetColumnTasks.map(task => task.id);
 
     let insertIndex = orderedIds.length;
@@ -183,7 +181,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ theme, toggleTheme }) 
     taskManager.setTaskOrder(targetStatus, orderedIds);
 
     if (sourceStatus !== targetStatus) {
-      const sourceColumnTasks = taskManager.getTasksByStatus(sourceStatus);
+      const sourceColumnTasks = tasks.filter(t => t.status === sourceStatus);
       taskManager.setTaskOrder(
         sourceStatus,
         sourceColumnTasks.map(task => task.id)
@@ -198,25 +196,23 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ theme, toggleTheme }) 
     return filteredTasks.filter(task => task.status === status);
   };
 
-  const availableColumns = ALL_STATUSES.filter(status => !visibleColumns.includes(status));
-
-  const handleAddColumn = (status: TaskStatus): void => {
-    setVisibleColumns(prev => (prev.includes(status) ? prev : [...prev, status]));
+  const handleAddNewColumn = (): void => {
+    if (newColTitle.trim()) {
+      taskManager.addColumn(newColTitle.trim());
+      setNewColTitle('');
+      setIsAddingNewCol(false);
+      loadTasks();
+    }
   };
 
-  const handleRemoveColumn = (status: TaskStatus): void => {
-    if (visibleColumns.length <= 1) return;
-
-    const remainingColumns = visibleColumns.filter(item => item !== status);
-    const targetStatus = remainingColumns[0]; // Move to the first available column
-
-    const columnTasks = tasks.filter(task => task.status === status);
-    columnTasks.forEach(task => {
-      taskManager.moveTask(task.id, targetStatus);
-    });
-
-    setVisibleColumns(remainingColumns);
-    loadTasks();
+  const handleConfirmDeleteColumn = (): void => {
+    if (columnToDelete) {
+      const target = deleteTaskDestination === 'delete' ? undefined : deleteTaskDestination;
+      taskManager.deleteColumn(columnToDelete, target);
+      setColumnToDelete(null);
+      setDeleteTaskDestination('delete');
+      loadTasks();
+    }
   };
 
   return (
@@ -231,32 +227,32 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ theme, toggleTheme }) 
         onLabelsChange={setSelectedLabels}
         sortBy={sortBy}
         onSortChange={setSortBy}
-        availableColumns={availableColumns}
-        onAddColumn={handleAddColumn}
+        availableColumns={[]} 
+        onAddColumn={() => setIsAddingNewCol(true)}
         onAddLabel={handleAddLabel}
         theme={theme}
         toggleTheme={toggleTheme}
       />
 
       <div className="board-container">
-        {visibleColumns.map(status => (
+        {columns.map(col => (
           <Column
-            key={status}
-            status={status}
-            title={customColumnTitles[status]}
-            tasks={getTasksByStatus(status)}
+            key={col.id}
+            status={col.id}
+            title={col.title}
+            tasks={getTasksByStatus(col.id)}
             allLabels={allLabels}
             onAddTask={handleAddTask}
             onDeleteTask={handleDeleteTask}
             onEditTask={(task) => setEditingTask(task)}
-            onEditColumn={(status, title) => setEditingColumn({status, title})}
+            onEditColumn={(status, title) => setEditingColumn({id: status, title})}
             onUpdateTask={handleUpdateTask}
             onTaskDrop={handleTaskDrop}
             onTaskDragStart={handleTaskDragStart}
             onTaskDragEnd={handleTaskDragEnd}
             draggingTaskId={draggingTaskId}
-            onRemoveColumn={handleRemoveColumn}
-            isColumnRemovable={visibleColumns.length > 1}
+            onRemoveColumn={(id) => setColumnToDelete(id)}
+            isColumnRemovable={columns.length > 1}
           />
         ))}
       </div>
@@ -275,6 +271,30 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ theme, toggleTheme }) 
         )}
       </Modal>
 
+      {/* Add New Column Modal */}
+      <Modal
+        isOpen={isAddingNewCol}
+        onClose={() => setIsAddingNewCol(false)}
+        title="افزودن ستون جدید"
+      >
+        <div className="edit-form">
+          <div className="form-group" style={{direction: 'rtl'}}>
+            <label>نام ستون جدید</label>
+            <input 
+              type="text" 
+              value={newColTitle} 
+              onChange={(e) => setNewColTitle(e.target.value)}
+              placeholder="مثلاً: در حال بررسی"
+              autoFocus
+            />
+            <div className="form-actions" style={{marginTop: '20px'}}>
+              <button className="btn-save" onClick={handleAddNewColumn}>ایجاد</button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Column Title Modal */}
       <Modal
         isOpen={!!editingColumn}
         onClose={() => setEditingColumn(null)}
@@ -293,11 +313,49 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ theme, toggleTheme }) 
               <div className="form-actions" style={{marginTop: '20px'}}>
                 <button 
                   className="btn-save" 
-                  onClick={() => handleUpdateColumnTitle(editingColumn.status, editingColumn.title)}
+                  onClick={() => handleUpdateColumnTitle(editingColumn.id, editingColumn.title)}
                 >
                   ذخیره
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Delete Column Confirmation Modal */}
+      <Modal
+        isOpen={!!columnToDelete}
+        onClose={() => setColumnToDelete(null)}
+        title="حذف ستون"
+      >
+        {columnToDelete && (
+          <div className="edit-form" style={{direction: 'rtl'}}>
+            <p>آیا از حذف ستون "{columns.find(c => c.id === columnToDelete)?.title}" اطمینان دارید؟</p>
+            
+            <div className="form-group" style={{marginTop: '15px'}}>
+              <label>تکلیف وظایف موجود در این ستون:</label>
+              <select 
+                value={deleteTaskDestination} 
+                onChange={(e) => setDeleteTaskDestination(e.target.value)}
+                style={{width: '100%', padding: '8px', border: 'var(--border-width) solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-color)'}}
+              >
+                <option value="delete">حذف تمام وظایف این ستون</option>
+                {columns
+                  .filter(c => c.id !== columnToDelete)
+                  .map(c => (
+                    <option key={c.id} value={c.id}>انتقال به ستون: {c.title}</option>
+                  ))}
+              </select>
+            </div>
+
+            <div className="form-actions" style={{marginTop: '20px'}}>
+              <button className="btn-save" style={{background: '#ff4444', color: 'white'}} onClick={handleConfirmDeleteColumn}>
+                تأیید و حذف
+              </button>
+              <button className="btn-cancel" style={{marginRight: '10px'}} onClick={() => setColumnToDelete(null)}>
+                انصراف
+              </button>
             </div>
           </div>
         )}

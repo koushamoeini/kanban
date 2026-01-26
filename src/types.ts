@@ -1,8 +1,10 @@
-export enum TaskStatus {
-  TODO = 'TO_DO',
-  IN_PROGRESS = 'IN_PROGRESS',
-  DONE = 'DONE'
-}
+export type TaskStatus = string;
+
+export const DefaultStatuses = {
+  TODO: 'TO_DO',
+  IN_PROGRESS: 'IN_PROGRESS',
+  DONE: 'DONE'
+} as const;
 
 export enum Priority {
   LOW = 1,
