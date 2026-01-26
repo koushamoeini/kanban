@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import { Task, Priority, Label } from '../types';
+import { Task, Priority } from '../types';
 import './TaskCard.css';
 
 interface TaskCardProps {
   task: Task;
-  allLabels: Label[];
   onDelete: (taskId: string) => void;
   onEdit: (task: Task) => void;
-  onUpdate: (taskId: string, updates: Partial<Task>) => void;
   onDragStart?: (taskId: string) => void;
   onDragEnd?: () => void;
   isBeingDragged?: boolean;
@@ -15,10 +13,8 @@ interface TaskCardProps {
 
 export const TaskCard: React.FC<TaskCardProps> = ({
   task,
-  allLabels,
   onDelete,
   onEdit,
-  onUpdate,
   onDragStart,
   onDragEnd,
   isBeingDragged

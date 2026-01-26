@@ -19,7 +19,6 @@ interface ColumnProps {
   onDeleteTask: (taskId: string) => void;
   onEditTask: (task: Task) => void;
   onEditColumn: (status: TaskStatus, title: string) => void;
-  onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
   onTaskDrop: (sourceId: string, targetStatus: TaskStatus, targetTaskId?: string) => void;
   onTaskDragStart: (taskId: string) => void;
   onTaskDragEnd: () => void;
@@ -37,7 +36,6 @@ export const Column: React.FC<ColumnProps> = ({
   onDeleteTask,
   onEditTask,
   onEditColumn,
-  onUpdateTask,
   onTaskDrop,
   onTaskDragStart,
   onTaskDragEnd,
@@ -222,10 +220,8 @@ export const Column: React.FC<ColumnProps> = ({
           >
             <TaskCard
               task={task}
-              allLabels={allLabels}
               onDelete={onDeleteTask}
               onEdit={onEditTask}
-              onUpdate={onUpdateTask}
               onDragStart={onTaskDragStart}
               onDragEnd={onTaskDragEnd}
               isBeingDragged={draggingTaskId === task.id}

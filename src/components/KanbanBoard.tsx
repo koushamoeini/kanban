@@ -227,7 +227,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ theme, toggleTheme }) 
         onLabelsChange={setSelectedLabels}
         sortBy={sortBy}
         onSortChange={setSortBy}
-        availableColumns={[]} 
         onAddColumn={() => setIsAddingNewCol(true)}
         onAddLabel={handleAddLabel}
         theme={theme}
@@ -246,7 +245,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ theme, toggleTheme }) 
             onDeleteTask={handleDeleteTask}
             onEditTask={(task) => setEditingTask(task)}
             onEditColumn={(status, title) => setEditingColumn({id: status, title})}
-            onUpdateTask={handleUpdateTask}
             onTaskDrop={handleTaskDrop}
             onTaskDragStart={handleTaskDragStart}
             onTaskDragEnd={handleTaskDragEnd}

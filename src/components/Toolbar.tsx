@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Label, TaskStatus } from '../types';
+import React, { useState } from 'react';
+import { Label } from '../types';
 import './Toolbar.css';
 
 interface ToolbarProps {
